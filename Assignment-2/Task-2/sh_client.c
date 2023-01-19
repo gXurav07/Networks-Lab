@@ -39,22 +39,40 @@ void bigReceive(int sockfd, char *buf){
 
 // receives a string in multiple packets and prints it simultaneously
 void bigRecvPrint(int newsockfd){
-    const int maxReceiveSize = 6;
-    int i=0;
+    const int maxReceiveSize = 6; 
 	char recv_buf[maxReceiveSize+1];
+	char temp[15]; temp[0]='\0'; int tempLen = 0;
+
+
+	
+	
     while(1){
         int size = maxReceiveSize;
         int count = recv(newsockfd, recv_buf, size, 0);
-		recv_buf[count]='\0';
-		if(i==0){
-			if(strcmp(recv_buf,"$$$$")==0) printf("Invalid command\n");
-			else if(strcmp(recv_buf,"####")==0) printf("Error in running command\n");
-			else printf("%s", recv_buf);
+		for(int i=0; i<count; i++){
+			temp[tempLen++] = recv_buf[i];
 		}
-		else printf("%s", recv_buf);
-        if(recv_buf[count-1]=='\0') break;   // command finished
-		i++;
-        
+		temp[tempLen] = '\0';
+
+		if(recv_buf[count-1]=='\0'){   // command finished
+			if(strcmp(temp, "$$$$")==0){
+				printf("Invalid command");
+			}
+			else if(strcmp(temp, "####")==0){
+				printf("Error in running command");
+			}
+			else{
+				printf("%s", temp);
+			}
+			break;
+		}
+
+		if(tempLen>=5){	
+			printf("%s", temp);
+			tempLen = 0;
+			temp[0] = '\0';
+		}
+
     }
 	printf("\n");
 	fflush(stdout);
