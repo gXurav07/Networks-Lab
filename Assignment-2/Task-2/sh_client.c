@@ -24,6 +24,23 @@ void bigSend(int sockfd,char* buf){
 	return;
 }
 
+// receives a string in multiple packets
+void bigRecvPrint(int newsockfd){
+    const int maxReceiveSize = 6;
+    int i=0;
+	char recv_buf[maxReceiveSize];
+    while(1){
+        int size = maxReceiveSize;
+        int count = recv(newsockfd, recv_buf, size, 0);
+		printf("%s", recv_buf);
+        if(recv_buf[count-1]=='\0') break;   // command finished
+        
+    }
+	printf("\n");
+	fflush(stdout);
+    return;
+}
+
 int main()
 {
 	int	sockfd ;
@@ -86,10 +103,7 @@ int main()
 
 		bigSend(sockfd, buf);	// send the command to the server
 
-		count = recv(sockfd, buf, BUF_SIZE, 0); // receive output from server
-
-		printf("%s\n", buf);	// print the output
-		fflush(stdin);
+		bigRecvPrint(sockfd);	// receive the output from the server and print it
 
 	}
 	

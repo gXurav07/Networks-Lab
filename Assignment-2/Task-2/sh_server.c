@@ -13,6 +13,7 @@
 
 #define BUFF_SIZE 300
 
+
 // receives a string in multiple packets
 void bigReceive(int newsockfd, char *buf){
     const int maxReceiveSize = 5;
@@ -28,6 +29,20 @@ void bigReceive(int newsockfd, char *buf){
         buf+=count;
     }
     return;
+}
+
+// sends a string in multiple packets
+void bigSend(int sockfd,char* buf){
+	const int maxSendSize = 7;
+	int n = strlen(buf)+1;
+	int i=0;
+	while(i<n){
+		int size = maxSendSize;
+		if(i+maxSendSize>n) size = n-i;
+		send(sockfd, buf+i, size, 0);
+		i+=maxSendSize;
+	}
+	return;
 }
 
 
