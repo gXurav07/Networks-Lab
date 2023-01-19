@@ -11,7 +11,7 @@
 #include <dirent.h> 
 
 
-#define BUFF_SIZE 300
+#define BUF_SIZE 300
 
 
 // receives a string in multiple packets
@@ -33,12 +33,6 @@ void bigReceive(int newsockfd, char *buf){
 
 // sends a string in multiple packets
 void bigSendPro(char* buf, int sockfd, int n){ // n = number of characters to send
-    printf("\nSending:-\n");
-    char xx[200];
-    strcpy(xx, buf);
-    xx[n]='\0';
-    printf("%d, %s\n", n, xx);
-
 	const int maxSendSize = 7;
 	int i=0;
 	while(i<n){
@@ -47,7 +41,6 @@ void bigSendPro(char* buf, int sockfd, int n){ // n = number of characters to se
 		send(sockfd, buf+i, size, 0);
 		i+=maxSendSize;
 	}
-    printf("[Done]\n\n");
 	return;
 }
 
@@ -55,8 +48,11 @@ void bigSendPro(char* buf, int sockfd, int n){ // n = number of characters to se
 
 void execute(char *command, int sockfd){
     if(command[0]=='c' && command[1]=='d'){     // execute cd 
-        if(strlen(command)==2 || command[2]!=' '){
-            bigSendPro("####", sockfd, 5); ////////
+        if(strlen(command)==2){
+            bigSendPro("####", sockfd, 5);      // no path given(unlike bash chdir gives error in this case)
+        }
+        else if(command[2]!=' '){
+            bigSendPro("$$$$", sockfd, 5);
         }
         else{
             char *path;
@@ -95,8 +91,6 @@ void execute(char *command, int sockfd){
             }  
             bigSendPro("\0", sockfd, 1); 
         }
-        
-
     }
     else bigSendPro("$$$$", sockfd, 5);
 }
@@ -108,7 +102,7 @@ int main(){
 	
 
 	int status, count;				// status variable for bind() function
-	char buff[BUFF_SIZE];		// used to communicate with client 		
+	char buff[BUF_SIZE];		// used to communicate with client 		
 
 	// Opens a socket (returns -1 incase an error occurs )
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -150,18 +144,16 @@ int main(){
 		send(newsockfd, buff, strlen(buff), 0);	            // send "LOGIN:" to client
 
         
-        count = recv(newsockfd, buff, BUFF_SIZE, 0);        // receive the username from client
-        printf("Received username: %s\n", buff);                               // print the received message
+        count = recv(newsockfd, buff, BUF_SIZE, 0);        // receive the username from client
+        // printf("Received username: %s\n", buff);                               // print the received message
 
         
         // Search for the username in users.txt
-
         FILE *fp;
         fp = fopen("users.txt", "r");
         char line[100];
         int flag = 0;
         while(fscanf(fp, "%s", line) != EOF){
-            //printf("%s||%s||\n", line, buff);
             if(strcmp(line, buff) ==0){
                 flag = 1;
                 break;
@@ -183,9 +175,8 @@ int main(){
 		while(1){
 			bigReceive(newsockfd, buff);		// receive a command from client
 			if(strlen(buff)==0) break;
-			printf("Received command: %s\n", buff);				// print the received message
+			// printf("Received command: %s\n", buff);				// print the received message
 			
-	
 			execute(buff, newsockfd);
 
 		}

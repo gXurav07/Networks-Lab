@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define BUF_SIZE 1000  // keep min 210
+#define BUF_SIZE 210
 #define MAX_USERNAME_SIZE 25
 
 // sends a string in multiple packets
