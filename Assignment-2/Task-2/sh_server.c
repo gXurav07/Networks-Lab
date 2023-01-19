@@ -129,8 +129,6 @@ int main(){
     
 
 	while(1) {
-
-		
 		// newsockfd is used for communicating with client
 		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen); 
 
@@ -139,6 +137,15 @@ int main(){
 			perror("Accept error\n");
 			exit(0);
 		}
+
+		if(fork()!=0){
+            // parent process
+			close(newsockfd);
+			continue;
+		}
+
+		// child process
+		close(sockfd);
 		
 		strcpy(buff, "LOGIN:");                         	// put "LOGIN:" in buff
 		send(newsockfd, buff, strlen(buff), 0);	            // send "LOGIN:" to client
@@ -184,6 +191,7 @@ int main(){
         chdir(curr_dir);
         free(curr_dir);
 		close(newsockfd);
+        exit(0);
         
 	}
     

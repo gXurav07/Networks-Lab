@@ -136,6 +136,12 @@ int main(){
 		clilen = sizeof(cli_addr);
 		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen); 
 
+		// if error in accept() then -1 is returned
+		if (newsockfd < 0) {
+			perror("Accept error\n");
+			exit(0);
+		}
+
 		if(fork()!=0){
 			close(newsockfd);
 			continue;

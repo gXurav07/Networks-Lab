@@ -33,8 +33,14 @@ void bigRecvPrint(int newsockfd){
         int size = maxReceiveSize;
         int count = recv(newsockfd, recv_buf, size, 0);
 		recv_buf[count]='\0';
-		printf("%s", recv_buf);
+		if(i==0){
+			if(strcmp(recv_buf,"$$$$")==0) printf("Invalid command\n");
+			else if(strcmp(recv_buf,"####")==0) printf("Error in running command\n");
+			else printf("%s", recv_buf);
+		}
+		else printf("%s", recv_buf);
         if(recv_buf[count-1]=='\0') break;   // command finished
+		i++;
         
     }
 	printf("\n");
