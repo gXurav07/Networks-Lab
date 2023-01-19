@@ -25,6 +25,19 @@ void bigSend(int sockfd,char* buf){
 }
 
 // receives a string in multiple packets
+void bigReceive(int sockfd, char *buf){
+    const int maxReceiveSize = 5;
+    int i=0;
+    while(1){
+        int size = maxReceiveSize;
+        int count = recv(sockfd, buf, size, 0);
+        if(buf[count-1]=='\0') break;   // command finished
+        buf+=count;
+    }
+    return;
+}
+
+// receives a string in multiple packets and prints it simultaneously
 void bigRecvPrint(int newsockfd){
     const int maxReceiveSize = 6;
     int i=0;
@@ -81,8 +94,8 @@ int main()
 
 	for(int i=0; i < BUF_SIZE; i++) buf[i] = '\0';
 
-	count = recv(sockfd, buf, BUF_SIZE, 0);			// Receive "LOGIN:" from server
-    buf[count]='\0';
+
+	bigReceive(sockfd, buf);						// Receive "LOGIN:" from server	
 	printf("%s ", buf);                           	// print the received message
 
     fgets(buf, MAX_USERNAME_SIZE+2, stdin);         // Take the username input, +2 for newline and null character   
@@ -90,9 +103,9 @@ int main()
 	                   
     send(sockfd, buf, strlen(buf)+1, 0);           	// send the username to server
 
-    count = recv(sockfd, buf, BUF_SIZE, 0);        	// receive the found/not-found message from server
-    buf[count]='\0';
-    
+
+	bigReceive(sockfd, buf);						// receive the found/not-found message from server
+  
     if(strcmp("FOUND", buf)!=0){
         printf("Invalid username\n");
         close(sockfd);

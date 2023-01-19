@@ -15,12 +15,12 @@
 
 
 // receives a string in multiple packets
-void bigReceive(int newsockfd, char *buf){
+void bigReceive(int sockfd, char *buf){
     const int maxReceiveSize = 5;
     int i=0;
     while(1){
         int size = maxReceiveSize;
-        int count = recv(newsockfd, buf, size, 0);
+        int count = recv(sockfd, buf, size, 0);
         if(count==0){                   // client closed connection
             buf[0]='\0';
             return;
@@ -148,10 +148,11 @@ int main(){
 		close(sockfd);
 		
 		strcpy(buff, "LOGIN:");                         	// put "LOGIN:" in buff
-		send(newsockfd, buff, strlen(buff), 0);	            // send "LOGIN:" to client
+		send(newsockfd, buff, strlen(buff)+1, 0);	            // send "LOGIN:" to client
 
         
-        count = recv(newsockfd, buff, BUF_SIZE, 0);        // receive the username from client
+        bigReceive(newsockfd, buff);                   // receive the username from client
+        //count = recv(newsockfd, buff, BUF_SIZE, 0);        // receive the username from client
         // printf("Received username: %s\n", buff);                               // print the received message
 
         
@@ -170,11 +171,11 @@ int main(){
 
         if(flag == 1){
             strcpy(buff, "FOUND");                              // put "FOUND" in buff
-            send(newsockfd, buff, strlen(buff), 0);             // send "FOUND" to client
+            send(newsockfd, buff, strlen(buff)+1, 0);             // send "FOUND" to client
         }
         else{
             strcpy(buff, "NOT-FOUND");                          // put "NOT-FOUND" in buff
-            send(newsockfd, buff, strlen(buff), 0);             // send "NOT-FOUND" to client
+            send(newsockfd, buff, strlen(buff)+1, 0);             // send "NOT-FOUND" to client
         }
 
         char *curr_dir = getcwd(NULL, 0);
