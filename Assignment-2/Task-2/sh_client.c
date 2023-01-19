@@ -28,10 +28,11 @@ void bigSend(int sockfd,char* buf){
 void bigRecvPrint(int newsockfd){
     const int maxReceiveSize = 6;
     int i=0;
-	char recv_buf[maxReceiveSize];
+	char recv_buf[maxReceiveSize+1];
     while(1){
         int size = maxReceiveSize;
         int count = recv(newsockfd, recv_buf, size, 0);
+		recv_buf[count]='\0';
 		printf("%s", recv_buf);
         if(recv_buf[count-1]=='\0') break;   // command finished
         
@@ -58,7 +59,7 @@ int main()
 
 	serv_addr.sin_family = AF_INET;		// the internet family
 	inet_aton("127.0.0.1", &serv_addr.sin_addr);	// 127.0.0.1 is a special address for "localhost" (this machine)
-	serv_addr.sin_port	= htons(20001);	// specifies the port number of the server
+	serv_addr.sin_port	= htons(20000);	// specifies the port number of the server
 
 	/* With the information specified in serv_addr, the connect()
 	   system call establishes a connection with the server process. */

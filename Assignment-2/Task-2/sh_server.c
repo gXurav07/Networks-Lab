@@ -32,9 +32,14 @@ void bigReceive(int newsockfd, char *buf){
 }
 
 // sends a string in multiple packets
-void bigSend(int sockfd,char* buf){
+void bigSendPro(char* buf, int sockfd, int n){ // n = number of characters to send
+    printf("\nSending:-\n");
+    char xx[200];
+    strcpy(xx, buf);
+    xx[n]='\0';
+    printf("%d, %s\n", n, xx);
+
 	const int maxSendSize = 7;
-	int n = strlen(buf)+1;
 	int i=0;
 	while(i<n){
 		int size = maxSendSize;
@@ -42,50 +47,58 @@ void bigSend(int sockfd,char* buf){
 		send(sockfd, buf+i, size, 0);
 		i+=maxSendSize;
 	}
+    printf("[Done]\n\n");
 	return;
 }
 
 
 
-char *execute(char *command){
-    char *output = (char *)malloc(1000*sizeof(char)); output[0]='\0';
+void execute(char *command, int sockfd){
     if(command[0]=='c' && command[1]=='d'){     // execute cd 
         if(strlen(command)==2 || command[2]!=' '){
-            strcpy(output, "####"); ////////
+            bigSendPro("####", sockfd, 5); ////////
         }
         else{
             char *path;
             path = command+3;
             int ch=chdir(path);
-            if(ch<0) strcpy(output, "####");
-            else strcpy(output, ""); 
+            if(ch<0) bigSendPro("####", sockfd, 5);
+            else bigSendPro("\0", sockfd, 1);
         }
     }
     else if(command[0]=='p' && command[1]=='w' && command[2]=='d' && strlen(command)==3){  // execute pwd
-        char *status = getcwd(output, 100*sizeof(char));
+        char output[210];
+        char *status = getcwd(output, 205*sizeof(char));
 
-        if(status==NULL) strcpy(output, "####");
+        if(status==NULL) bigSendPro("####", sockfd, 5);
+        else{
+            bigSendPro(output, sockfd, strlen(output)+1);
+        }
     }
     else if(command[0]=='d' && command[1]=='i' && command[2]=='r'){  // execute dir
         char *path;
         if(strlen(command)==3) path = ".";
+        else if(command[3]!=' '){
+            bigSendPro("$$$$", sockfd, 5);
+            return;
+        }
         else path = command+4;
+
         DIR *dir = opendir(path);
-        if(dir==NULL) strcpy(output, "####");
+        if(dir==NULL) bigSendPro("####", sockfd, 5);
         else{
             struct dirent *entry;
             while((entry = readdir(dir))!=NULL){
                 if(strcmp(entry->d_name, ".")==0 || strcmp(entry->d_name, "..")==0) continue;  
-                strcat(output, entry->d_name);
-                strcat(output, "\n");
-            }   
+                bigSendPro(entry->d_name, sockfd, strlen(entry->d_name));
+                bigSendPro("\n", sockfd, 1);
+            }  
+            bigSendPro("\0", sockfd, 1); 
         }
-        if(command[3]!='\0' && command[3]!=' ') strcpy(output, "$$$$");
-        else if(closedir(dir)<0) strcpy(output, "####");
+        
 
     }
-    else strcpy(output, "$$$$");
-    return output;
+    else bigSendPro("$$$$", sockfd, 5);
 }
 
 int main(){
@@ -105,7 +118,7 @@ int main(){
 
 	serv_addr.sin_family = AF_INET;			// the internet family
 	serv_addr.sin_addr.s_addr = INADDR_ANY;	// set to INADDR_ANY for machines having a single IP address
-	serv_addr.sin_port = htons(20001);		// specifies the port number of the server
+	serv_addr.sin_port = htons(20000);		// specifies the port number of the server
 
     clilen = sizeof(cli_addr);
 
@@ -172,10 +185,9 @@ int main(){
 			if(strlen(buff)==0) break;
 			printf("Received command: %s\n", buff);				// print the received message
 			
-			char* output;
-			output = execute(buff);
-			send(newsockfd, output, strlen(output)+1, 0);
-            free(output);
+	
+			execute(buff, newsockfd);
+
 		}
 
         chdir(curr_dir);
