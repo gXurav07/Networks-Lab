@@ -37,8 +37,7 @@ int main() {
     socklen_t len; 
     char *hello = "CLIENT:HELLO"; 
       
-    sendto(sockfd, (const char *)hello, strlen(hello), 0, 
-			(const struct sockaddr *) &servaddr, sizeof(servaddr)); // Send HELLO to server
+
     
     
     struct pollfd fdset[1];
@@ -48,12 +47,15 @@ int main() {
 
     int tries_left=MAX_TRIES, flag=0;
     while(tries_left--){
-        if(poll(fdset, 1, TIMEOUT)==1){
+     	sendto(sockfd, (const char *)hello, strlen(hello), 0, 
+			(const struct sockaddr *) &servaddr, sizeof(servaddr)); // Send HELLO to server
+    	if(poll(fdset,1,TIMEOUT)==1){
             count = recvfrom(sockfd, (char *)buf, BUF_SIZE, 0, 
 			    ( struct sockaddr *) &servaddr, &len); 
             flag = 1;
             break;
         }
+
     }
 
     if(!flag){
