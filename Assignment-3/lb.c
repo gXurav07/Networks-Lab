@@ -11,8 +11,13 @@
 
 #define BUF_SIZE 50
 
+int min( int a, int b){
+    if(a<b) return a;
+    return b;
+}
+
 void receive_in_packets(int sockfd, char *buf, int size); // receives data in packets
-int get_sockfd(int port_no);    // opens a new socket returns its descriptor
+int get_sockfd(int port_no);    // opens a new socket returns its descriptor (doesn't binds if port_no = -1)
 struct sockaddr_in get_serv_addr(int port_no, char *ip_addr); // returns a server address
 int get_load(struct sockaddr_in serv_addr); // gets load of server
 int wait_for_client(int sockfd_cli, int time_in_sec); // returns newsockfd if connected to client, -1 otherwise 
@@ -21,13 +26,18 @@ void get_send_time(int sockfd, struct sockaddr_in serv_addr); // gets time from 
 
 int main(int argc, char **argv)
 {
-	clock_t global_start; time(&global_start); // for debugging
-    int port_lb, port_s1, port_s2;
-	struct sockaddr_in	serv_addr_1, serv_addr_2;
+    int port_lb, port_s1, port_s2; // port numbers of load balancer, server 1 and server 2
+	struct sockaddr_in	serv_addr_1, serv_addr_2; // server addresses
 
 	int	sockfd_cli, newsockfd;			// socket descriptors
 	int load_1, load_2, timeout, diff; 	// load of servers, timeout for poll() in sec
 	clock_t before, after;				// for timeout
+
+	if(argc != 4){
+		printf("Usage: ./lb <port_lb> <port_s1> <port_s2>\n");
+		exit(0);
+	}
+		
 
 	port_lb = atoi(argv[1]);
 	port_s1 = atoi(argv[2]);
@@ -35,7 +45,8 @@ int main(int argc, char **argv)
 
 	
 	sockfd_cli = get_sockfd(port_lb);		// socket to receive client calls (binded)
-    printf("LOAD BALANCER started [on port number %d]!\n", port_lb); fflush(stdout);
+    printf("\nLOAD BALANCER started!\n"); 
+	printf("Listening on port number %d .......\n\n", port_lb);fflush(stdout);
     
 	serv_addr_1 = get_serv_addr(port_s1, "127.0.0.1"); // get address of server 1
 	serv_addr_2 = get_serv_addr(port_s2, "127.0.0.1"); // get address of server 1
@@ -43,7 +54,7 @@ int main(int argc, char **argv)
 
 	load_1 = get_load(serv_addr_1);
 	load_2 = get_load(serv_addr_2);
-	printf("Load 1: %d,  Load 2: %d\n\n", load_1, load_2);
+	printf("\n"); 
 	timeout = 5; // in sec
 	while(1){
 		time(&before);
@@ -52,10 +63,7 @@ int main(int argc, char **argv)
     
 		if(newsockfd == -1){ 
 			load_1 = get_load(serv_addr_1);
-			load_2 = get_load(serv_addr_2);
-			printf("Load 1: %d,  Load 2: %d\n", load_1, load_2);
-			clock_t curr_time; time(&curr_time); // for debugging
-			printf("Time elapsed: %ld sec\n\n", curr_time-global_start); // for debugging
+			load_2 = get_load(serv_addr_2); printf("\n"); 
 			timeout=5; // in sec
 			continue;
 		}
@@ -68,7 +76,6 @@ int main(int argc, char **argv)
 		}
 		
 		// child process
-		clock_t curr_time;time(&curr_time); printf("Time(on connect): %ld sec\n", curr_time-global_start); // for debugging
 		close(sockfd_cli); 
 		if(load_1<load_2)
 			get_send_time(newsockfd, serv_addr_1);
@@ -85,10 +92,11 @@ int main(int argc, char **argv)
 
 // receives a buffer in chunks of size BUF_SIZE
 void receive_in_packets(int sockfd, char *buf, int size){
+    const int PACKET_SIZE = 4;
     int bytes_received = 0;
     buf[0] = '\0';
     while(bytes_received < size){
-        int bytes = recv(sockfd, buf + bytes_received, size - bytes_received, 0);
+        int bytes = recv(sockfd, buf + bytes_received, min(size - bytes_received, PACKET_SIZE), 0);
         if(bytes == -1){
             perror("Error in receiving data");
             exit(0);
@@ -104,7 +112,7 @@ void receive_in_packets(int sockfd, char *buf, int size){
 }
 
 
-// returns a socket descriptor
+// returns a socket descriptor (doesn't binds if port_no = -1)
 int get_sockfd(int port_no){
 	int	sockfd;		// socket descriptors 
 	int status;		// status variable for bind() function	
@@ -162,9 +170,10 @@ int get_load(struct sockaddr_in	serv_addr){
 
     strcpy(buf, "Send Load");
 	send(sockfd_serv, buf, strlen(buf)+1, 0);
-    recv(sockfd_serv, buf, BUF_SIZE, 0);
+	receive_in_packets(sockfd_serv, buf, BUF_SIZE);
+    
 
-    printf("Load Received from %s [port %d] ", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
+    printf("Load Received from %s ", inet_ntoa(serv_addr.sin_addr));
 	printf("%s\n", buf); fflush(stdout);
 	close(sockfd_serv);		// close the socket
 	
@@ -191,10 +200,8 @@ int wait_for_client(int sockfd_cli, int time_in_sec){
 				perror("Accept error\n");
 				exit(0);
 			}
-			else{
-				printf("\nClient Connected!\n");
+			else
 				flag=1;
-			}
 		}
 
 		if(flag)
@@ -206,7 +213,7 @@ int wait_for_client(int sockfd_cli, int time_in_sec){
 
 // gets time from server and sends it to client
 void get_send_time(int sockfd, struct sockaddr_in serv_addr){
-	printf("Sending client request to Server %s [Port %d]\n", inet_ntoa(serv_addr.sin_addr), ntohs(serv_addr.sin_port));
+	printf("Sending client request to Server %s \n\n", inet_ntoa(serv_addr.sin_addr)); fflush(stdout);
 	int sockfd_serv = get_sockfd(-1);           // socket to sommunicate with server (unbinded)
 	int status = connect(sockfd_serv, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
 	if (status < 0) {
@@ -220,7 +227,6 @@ void get_send_time(int sockfd, struct sockaddr_in serv_addr){
 	strcpy(buf, "Send Time");
 	send(sockfd_serv, buf, strlen(buf)+1, 0);
 	receive_in_packets(sockfd_serv, buf, BUF_SIZE);
-	printf("Time Received: %s\n\n", buf); fflush(stdout);
 	close(sockfd_serv);		// close the socket
 
 	send(sockfd, buf, strlen(buf)+1, 0);

@@ -9,10 +9,14 @@
 #include <arpa/inet.h>
 
 
-#define BUF_SIZE 50
+#define BUF_SIZE 70
 #define MIN_LOAD 1
 #define MAX_LOAD 100
 
+int min( int a, int b){
+    if(a<b) return a;
+    return b;
+}
 
 // returns a dummy load(random number)
 int dummy_load()
@@ -31,10 +35,11 @@ char *getTime(){
 
 
 void receive_in_packets(int sockfd, char *buf, int size){
+    const int PACKET_SIZE = 4;
     int bytes_received = 0;
     buf[0] = '\0';
     while(bytes_received < size){
-        int bytes = recv(sockfd, buf + bytes_received, size - bytes_received, 0);
+        int bytes = recv(sockfd, buf + bytes_received, min(size - bytes_received, PACKET_SIZE), 0);
         if(bytes == -1){
             perror("Error in receiving data");
             exit(0);
